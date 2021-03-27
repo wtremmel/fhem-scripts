@@ -52,6 +52,10 @@ foreach $this (@fenster) {
     $ledcolor = "10 0 0";
     $somethingisopen = 1;
 
+    `mosquitto_pub -t /Chattenweg5/Fenster/$this-m 1`;
+
+  } else {
+    `mosquitto_pub -t /Chattenweg5/Fenster/$this -m 0`;
   }
 }
 
