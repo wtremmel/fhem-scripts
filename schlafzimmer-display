@@ -1,0 +1,20 @@
+#!/usr/bin/perl
+
+$fhem = "/opt/fhem/fhem.pl";
+$port = 7072;
+
+chomp($nxt_up = `$fhem $port "list a_Schlafzimmer_Rolladen_Fenster_hoch state"`);
+chomp($nxt_dn = `$fhem $port "list a_Schlafzimmer_Rolladen_Fenster_runter state"`);
+
+$nxt_up =~ s/^.*Next:\s*//;
+$nxt_dn =~ s/^.*Next:\s*//;
+
+chomp $nxt_up;
+chomp $nxt_dn;
+
+# print "\"$nxt_up\"\n";
+# print "\"$nxt_dn\"\n";
+
+`$fhem $port "set Schlafzimmer_Taster datapoint 3.SUBMIT text1=\"$nxt_up\",text3=\"$nxt_dn\""`;
+
+

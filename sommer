@@ -1,0 +1,28 @@
+#!/usr/bin/perl
+#
+# 
+#
+
+$fhem = "/opt/fhem/fhem.pl";
+$port = 7072;
+
+@hmheizung = ( "Arbeitszimmer_Heizung", 
+	"Fernsehzimmer_Heizung",
+	"Schlafzimmer_Heizung",
+	"Wohnzimmer_Heizung",
+	"Bad1_Heizung",
+	"Bad2_Heizung",
+	"WZ_Heizung",
+	"Ankleidezimmer_Heizung" );
+
+
+`$fhem $port "set Heizperiode 0"`;
+
+foreach $this (@hmheizung) {
+  print "$this\n:";
+  
+  `$fhem $port "set $this Manu"`;
+  `$fhem $port "set $this control 30.5"`;
+
+}
+

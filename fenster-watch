@@ -1,0 +1,109 @@
+#!/usr/bin/perl
+#
+# checks if windows are open
+#
+
+$fhem = "/opt/fhem/fhem.pl";
+$port = 7072;
+
+$target = "esp16";
+
+$debug = 0;
+
+if (!$debug) {
+  use Proc::Daemon;
+  $pid = Proc::Daemon::Init;
+  exit if $pid;
+}
+
+while (1) {
+
+# get window list
+$list = `$fhem $port "list room=Fenster"`;
+
+@fenster = split(/\n/,$list);
+$ledcolor = "0 10 0";
+
+$somethingisopen = 0;
+$bad1 = 0;
+%disp = ();
+
+foreach $this (@fenster) {
+  my $state = `$fhem $port "list $this" | grep " STATE" | head -1`;
+
+  if ($state =~ /[Oo]pen/) {
+    if ($this =~ /Arbeitszimmer/ || $this =~ /Bad2/) {
+      $disp{"Dach"} = 1;
+    } elsif ($this =~ /Bad1/) {
+      $disp{"Bad"} = 1;
+      $bad1 = 1;
+    } elsif ($this =~ /Kueche/) {
+      $disp{"Kueche"} = 1;
+    } elsif ($this =~ /Schlafzimmer/) {
+      $disp{"Schlafz."} = 1;
+    } elsif ($this =~ /WZ_/) {
+      $disp{"Wohnz."} = 1;
+    } elsif ($this =~ /Haustuer/) {
+      $disp{"Haustuer"} = 1;
+    } else {
+      $disp{"????"} = 1;
+    }
+
+    $ledcolor = "10 0 0";
+    $somethingisopen = 1;
+
+  }
+}
+
+
+# `mosquitto_pub -t $target -m "led $ledcolor"`;
+
+$display = "";
+foreach $k (keys %disp) {
+  $display .= " $k";
+}
+
+if ($somethingisopen) {
+  `mosquitto_pub -t $target -m "display $display"`;
+} else {
+  # get Temperatures
+  $temp{"Vorgarten"} = &getTemperature("Vorgarten_Sensor");
+  $temp{"Garten"} = &getTemperature("Garten_Sensor");
+  $temp{"Loggia"} = &getTemperature("Loggia_Sensor");
+
+  foreach $this (keys %temp) {
+    if ($lasttemp{$this} == $temp{$this}) {
+      $sametemp{$this} += 1;
+      if ($sametemp{$this} > 15) {
+        delete($temp{$this});
+      }
+    } else {
+      $sametemp{$this} = 0;
+      $lasttemp{$this} = $temp{$this};
+    }
+  }
+
+  my @keys = sort { $temp{$a} <=> $temp{$b} } keys(%temp);
+  my @vals = @temp{@keys};
+
+  my $str = $keys[0] . " " . sprintf("%.1f",$vals[0]) . "°C";
+
+  `mosquitto_pub -t $target -m "display $str"`;
+    
+
+  # `mosquitto_pub -t $target -m "display temphum"`;
+}
+
+
+sleep 60;
+}
+
+
+sub getTemperature {
+ my $from = shift;
+
+ my $tempstr = `$fhem $port "list $from"|egrep 20.*temperature`;
+ if ($tempstr =~ /([\-0-9.]+)$/) {
+   return $1;
+ }
+}
