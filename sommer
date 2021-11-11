@@ -10,6 +10,7 @@ $port = 7072;
 	"Fernsehzimmer_Heizung",
 	"Schlafzimmer_Heizung",
 	"Wohnzimmer_Heizung",
+	"Gaestezimmer_Heizung",
 	"Bad1_Heizung",
 	"Bad2_Heizung",
 	"WZ_Heizung",
